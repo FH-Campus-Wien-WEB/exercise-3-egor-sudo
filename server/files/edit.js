@@ -1,84 +1,83 @@
-function setMovie(movie) {
+window.onload = function () {
 
-  for (const element of document.forms[0].elements) {
-    const name = element.id;
-    const value = movie[name];
-    
-    if (name === "Genres") {
-      const options = element.options;
-      for (let index = 0; index < options.length; index++) {
-        const option = options[index];
-        option.selected = value.indexOf(option.value) >= 0;
+  const params = new URLSearchParams(window.location.search); // read URL params
+  const id = params.get("imdbID"); // get imdbID from URL
+
+  const xhr = new XMLHttpRequest();
+
+  xhr.onload = function () {
+    const movie = JSON.parse(xhr.responseText); // parse movie
+
+    const genresSelect = document.getElementById("Genres");
+    if (genresSelect && movie.Genres) {
+      for (let i = 0; i < genresSelect.options.length; i++) {
+        const opt = genresSelect.options[i];
+        opt.selected = movie.Genres.includes(opt.value);
       }
-    } else {
-      element.value = value;
-    }
-  }
-}
-
-function getMovie() {
-  const movie = {};
-
-  const elements = Array.from(document.forms[0].elements).filter(element => element.id)
-
-  for (const element of elements) {
-    const name = element.id;
-
-    let value;
-
-    if (name === "Genres") {
-      value = [];
-      const options = element.options;
-      for (let index = 0; index < options.length; index++) {
-        const option = options[index];
-        if (option.selected) {
-          value.push(option.value);
-        }
-      }
-    } else if (name === "Metascore" || name === "Runtime" || name === "imdbRating") {
-        value = Number(element.value);
-    } else if (name === "Actors" || name === "Directors" || name === "Writers") {
-      value = element.value.split(",").map((item) => item.trim());
-    } else {
-      value = element.value;
     }
 
-    movie[name] = value;
-  }
+    // fill form fields with movie data
+    document.getElementById("imdbID").value = movie.imdbID;
+    document.getElementById("Title").value = movie.Title;
+    document.getElementById("Released").value = movie.Released;
+    document.getElementById("Runtime").value = movie.Runtime;
+    document.getElementById("Plot").value = movie.Plot;
+    document.getElementById("Poster").value = movie.Poster;
+    document.getElementById("imdbRating").value = movie.imdbRating;
+    document.getElementById("Directors").value = (movie.Directors || []).join(", ");
+    document.getElementById("Writers").value = (movie.Writers || []).join(", ");
+    document.getElementById("Actors").value = (movie.Actors || []).join(", ");
+  };
 
-  return movie;
-}
+  xhr.open("GET", "/movies/" + id); // request single movie
+  xhr.send();
+};
 
 function putMovie() {
-  const movie = getMovie();
+  let id = document.getElementById("imdbID").value;
+  
+if (!id) {
+  id = "tt" + Date.now();
+  document.getElementById("imdbID").value = id;
+}
 
-  const xhr = new XMLHttpRequest()
-  xhr.onload = function() {
-    if (xhr.status == 200 || xhr.status === 204) {
-      location.href = 'index.html'
-    } else {
-      alert("Saving of movie data failed. Status code was " + response.status)
+
+  const genresSelect = document.getElementById("Genres");
+  const selectedGenres = [];
+  for (let i = 0; i < genresSelect.options.length; i++) {
+    if (genresSelect.options[i].selected) {
+      selectedGenres.push(genresSelect.options[i].value);
     }
   }
+
+  function splitToArray(str) {
+    if (!str) return [];
+    return str.split(",").map(s => s.trim()).filter(s => s.length > 0);
+  }
+
+  const movie = {
+    imdbID: document.getElementById("imdbID").value,
+    Title: document.getElementById("Title").value,
+    Released: document.getElementById("Released").value,
+    Runtime: document.getElementById("Runtime").value,
+    Plot: document.getElementById("Plot").value,
+    Poster: document.getElementById("Poster").value,
+    imdbRating: Number(document.getElementById("imdbRating").value),
+
+    Genres: selectedGenres,
+    Directors: splitToArray(document.getElementById("Directors").value),
+    Writers: splitToArray(document.getElementById("Writers").value),
+    Actors: splitToArray(document.getElementById("Actors").value)
+  };
   
-  xhr.open("PUT", "/movies/" + movie.imdbID)
-  xhr.setRequestHeader("Content-Type", "application/json")
 
-  xhr.send(JSON.stringify(movie))
+  const xhr = new XMLHttpRequest();
 
+  xhr.open("PUT", "/movies/" + movie.imdbID);
+  xhr.setRequestHeader("Content-Type", "application/json");
+  xhr.send(JSON.stringify(movie));
+
+  xhr.onload = function () {
+    location.href = "index.html";
+  };
 }
-
-/** Loading and setting the movie data for the movie with the passed imdbID */
-const imdbID = new URLSearchParams(window.location.search).get("imdbID");
-
-const xhr = new XMLHttpRequest();
-xhr.open("GET", "/movies/" + imdbID);
-xhr.onload = function() {
-  if (xhr.status === 200) {
-    setMovie(JSON.parse(xhr.responseText));
-  } else {
-    alert("Loading of movie data failed. Status was " + xhr.status + " - " + xhr.statusText);
-  } 
-}
-
-xhr.send()

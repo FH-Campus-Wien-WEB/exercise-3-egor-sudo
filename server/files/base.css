@@ -1,6 +1,6 @@
 body {
   font-family: "Trebuchet MS", sans-serif;
-  background-color: brown;
+  background-color: rgb(71, 71, 71);
   color: beige;
 }
 
@@ -9,10 +9,11 @@ main {
 }
 
 button {
-    padding: 4px;
+    padding: 0px 8px;
+    margin-right: 8px;
     border-width: 1px;
     border-radius: 4px;
-    font-size: 105%;
+    font-size: 110%;
 }
 
 button:hover {
